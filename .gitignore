@@ -1,0 +1,44 @@
+# ── Build artifacts ──────────────────────────────────────────────────────────
+tests/unit_tests
+tests/integration_tests
+tests/integration_tests_real
+tests/acceptance_test
+bench/diarization_bench
+bench/diarization_bench_real
+
+# Object files / dependency files
+*.o
+*.d
+*.a
+*.so
+*.so.*
+
+# ── CI / log files ───────────────────────────────────────────────────────────
+*.log
+ci_run.log
+
+# ── Core dumps ───────────────────────────────────────────────────────────────
+core
+core.*
+vgcore.*
+
+# ── OS / editor artefacts ────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Python cache ─────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+
+# ── Large binary assets (tracked via LFS or separately) ─────────────────────
+# audio/ contains ~10-35 MB WAV files — uncomment to exclude from git
+# audio/
+
+# wespeaker/ contains the ONNX model (~24 MB) — uncomment to exclude
+# wespeaker/
