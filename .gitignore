@@ -42,3 +42,5 @@ __pycache__/
 
 # wespeaker/ contains the ONNX model (~24 MB) — uncomment to exclude
 # wespeaker/
+
+dev/
