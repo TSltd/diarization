@@ -1,4 +1,4 @@
-#include "TranscriptFormatter.h"
+#include <diarization/TranscriptFormatter.h>
 
 #include <algorithm>
 #include <format>

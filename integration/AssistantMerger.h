@@ -1,7 +1,7 @@
 #pragma once
 
 // ---------------------------------------------------------------------------
-// AssistantMerger.h
+// integration/AssistantMerger.h
 //
 // Application-layer merge of ASSISTANT (TTS) segments into a diarized
 // transcript.
@@ -31,7 +31,7 @@
 //   auto output = TranscriptFormatter::format(merged, SpeakerFormat::Json, ...);
 // ---------------------------------------------------------------------------
 
-#include "TranscriptFormatter.h"   // TranscriptSegment
+#include <diarization/TranscriptFormatter.h>   // TranscriptSegment
 
 #include <algorithm>
 #include <string>

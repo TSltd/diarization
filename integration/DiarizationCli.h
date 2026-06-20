@@ -41,8 +41,8 @@
 ///   }
 
 #include <string>
-#include "DiarizationEngine.h"   // DiarizationOptions
-#include "TranscriptFormatter.h" // SpeakerFormat, parse_speaker_format
+#include <diarization/DiarizationEngine.h>   // DiarizationOptions
+#include <diarization/TranscriptFormatter.h> // SpeakerFormat, parse_speaker_format
 
 // ---------------------------------------------------------------------------
 // CLI argument bag  (one-to-one with the ticket's --speaker-* flags)

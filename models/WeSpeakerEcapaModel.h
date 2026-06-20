@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "ISpeakerEmbeddingModel.h"
+#include <diarization/ISpeakerEmbeddingModel.h>
 
 // Forward-declare ONNX Runtime types to keep the header lightweight.
 namespace Ort { class Session; class Env; class SessionOptions; }

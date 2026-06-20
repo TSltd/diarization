@@ -1,7 +1,7 @@
 #pragma once
 
 // ---------------------------------------------------------------------------
-// DiarizationStatus.h
+// integration/DiarizationStatus.h
 //
 // Formats the `audio record status` output block.
 //
@@ -20,8 +20,8 @@
 //   std::cout << st.format() << "\n";
 // ---------------------------------------------------------------------------
 
-#include "DiarizationCli.h"    // DiarizationCliArgs
-#include "SpeakerCluster.h"    // SpeakerCluster
+#include "DiarizationCli.h"                // DiarizationCliArgs (same dir)
+#include <diarization/SpeakerCluster.h>    // SpeakerCluster
 
 #include <sstream>
 #include <string>

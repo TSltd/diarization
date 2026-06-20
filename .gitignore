@@ -36,9 +36,12 @@ __pycache__/
 *.pyc
 *.pyo
 
+# ── CMake build directory ────────────────────────────────────────────────────
+build/
+
 # ── Large binary assets (tracked via LFS or separately) ─────────────────────
-# audio/ contains ~10-35 MB WAV files — uncomment to exclude from git
-# audio/
+# testdata/audio/ contains ~10-35 MB WAV files — uncomment to exclude from git
+# testdata/audio/
 
 # wespeaker/ contains the ONNX model (~24 MB) — uncomment to exclude
 # wespeaker/

@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "SpeakerCluster.h"
+#include <diarization/SpeakerCluster.h>
 
 /// Clustering parameters forwarded from DiarizationOptions.
 struct ClusteringOptions {

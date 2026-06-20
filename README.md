@@ -6,20 +6,57 @@ requiring any pre-registered voice profiles.
 
 ---
 
+## Repository layout
+
+```
+include/diarization/   Public headers  — compile with -Iinclude
+  AudioChunk.h
+  ISpeakerEmbeddingModel.h
+  SpeakerCluster.h
+  SpeakerClusterManager.h
+  LabelSmoother.h
+  DiarizationEngine.h
+  TranscriptFormatter.h
+
+src/                   Core implementation
+  DiarizationEngine.cpp
+  SpeakerClusterManager.cpp
+  LabelSmoother.cpp
+  TranscriptFormatter.cpp
+
+models/                ONNX model adapter
+  WeSpeakerEcapaModel.h/.cpp
+  EcapaOnnxModel.h/.cpp
+
+adapters/              Integration shims
+  AudioRecordCommand.h
+  WhisperAdapter.h
+
+integration/           Application-layer helpers
+  AssistantMerger.h
+  DiarizationCli.h
+  DiarizationStatus.h
+
+tests/                 Unit / integration / acceptance tests
+testdata/audio/        WAV samples for testing and benchmarking
+bench/                 Benchmark harness
+wespeaker/             ONNX model weights (not committed by default)
+```
+
 ## What's included
 
-| File                           | Purpose                                                             |
-| ------------------------------ | ------------------------------------------------------------------- |
-| `DiarizationEngine.h/.cpp`     | Core pipeline: embed → cluster → label                              |
-| `SpeakerClusterManager.h/.cpp` | Cosine-similarity cluster manager                                   |
-| `LabelSmoother.h/.cpp`         | Post-pass to remove single-segment speaker noise                    |
-| `TranscriptFormatter.h/.cpp`   | Inline / SRT / VTT / JSON output formatters                         |
-| `WeSpeakerEcapaModel.h/.cpp`   | ONNX ECAPA-TDNN speaker embedding model                             |
-| `AudioRecordCommand.h`         | Integration shim for `pm-image-cli`                                 |
-| `AssistantMerger.h`            | Injects ASSISTANT TTS segments; clips overlapping diarized segments |
-| `DiarizationStatus.h`          | Formats `audio record status` output                                |
-| `WhisperAdapter.h`             | Bridge from `whisper_context*` to `WhisperSegment`                  |
-| `DiarizationCli.h`             | CLI argument struct (`--diarize`, `--speaker-model`, …)             |
+| Path                                | Purpose                                                             |
+| ----------------------------------- | ------------------------------------------------------------------- |
+| `src/DiarizationEngine.cpp`         | Core pipeline: embed → cluster → label                              |
+| `src/SpeakerClusterManager.cpp`     | Cosine-similarity cluster manager                                   |
+| `src/LabelSmoother.cpp`             | Post-pass to remove single-segment speaker noise                    |
+| `src/TranscriptFormatter.cpp`       | Inline / SRT / VTT / JSON output formatters                         |
+| `models/WeSpeakerEcapaModel.h/.cpp` | ONNX ECAPA-TDNN speaker embedding model                             |
+| `adapters/AudioRecordCommand.h`     | Integration shim for `pm-image-cli`                                 |
+| `integration/AssistantMerger.h`     | Injects ASSISTANT TTS segments; clips overlapping diarized segments |
+| `integration/DiarizationStatus.h`   | Formats `audio record status` output                                |
+| `adapters/WhisperAdapter.h`         | Bridge from `whisper_context*` to `WhisperSegment`                  |
+| `integration/DiarizationCli.h`      | CLI argument struct (`--diarize`, `--speaker-model`, …)             |
 
 ---
 
@@ -78,7 +115,7 @@ Place the file at `wespeaker/voxceleb_ECAPA512_LM.onnx` inside the repo root.
 
 ## Test audio
 
-`.wav` audio samples used for benchmarking and real-model validation:
+`.wav` audio samples used for benchmarking and real-model validation (in `testdata/audio/`):
 
 - `M_1011_13y10m_1.wav` — 112 s, 44 100 Hz mono
 - `M_1017_11y8m_1.wav` — 300 s, 44 100 Hz mono

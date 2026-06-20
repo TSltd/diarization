@@ -29,12 +29,12 @@
 #include <vector>
 
 #include "wav_reader.h"            // wav::read_wav_mono
-#include "../DiarizationEngine.h"
-#include "../ISpeakerEmbeddingModel.h"
-#include "../TranscriptFormatter.h"
+#include <diarization/DiarizationEngine.h>
+#include <diarization/ISpeakerEmbeddingModel.h>
+#include <diarization/TranscriptFormatter.h>
 
 #ifdef DIARIZE_HAVE_MODEL
-#include "../WeSpeakerEcapaModel.h"
+#include "models/WeSpeakerEcapaModel.h"
 #endif
 
 // ---------------------------------------------------------------------------

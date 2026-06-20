@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "AudioChunk.h"
+#include <diarization/AudioChunk.h>
 
 /// Abstract interface for speaker embedding models.
 /// A concrete implementation (e.g. EcapaOnnxModel) loads an ONNX model and

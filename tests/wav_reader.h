@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-#include "../TranscriptFormatter.h"  // AudioBuffer
+#include <diarization/TranscriptFormatter.h>  // AudioBuffer
 
 namespace wav {
 

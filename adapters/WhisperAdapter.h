@@ -1,7 +1,7 @@
 #pragma once
 
 // ---------------------------------------------------------------------------
-// WhisperAdapter.h
+// adapters/WhisperAdapter.h
 //
 // Bridges whisper.cpp output to the types expected by DiarizationEngine /
 // TranscriptFormatter.
@@ -25,7 +25,7 @@
 // not link against whisper.
 // ---------------------------------------------------------------------------
 
-#include "TranscriptFormatter.h"   // WhisperSegment
+#include <diarization/TranscriptFormatter.h>   // WhisperSegment
 
 #include <algorithm>
 #include <cctype>

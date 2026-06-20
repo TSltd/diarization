@@ -20,13 +20,13 @@
 #include <vector>
 
 // Headers under test
-#include "../AudioChunk.h"
-#include "../DiarizationEngine.h"
-#include "../ISpeakerEmbeddingModel.h"
-#include "../LabelSmoother.h"
-#include "../SpeakerCluster.h"
-#include "../SpeakerClusterManager.h"
-#include "../TranscriptFormatter.h"
+#include <diarization/AudioChunk.h>
+#include <diarization/DiarizationEngine.h>
+#include <diarization/ISpeakerEmbeddingModel.h>
+#include <diarization/LabelSmoother.h>
+#include <diarization/SpeakerCluster.h>
+#include <diarization/SpeakerClusterManager.h>
+#include <diarization/TranscriptFormatter.h>
 
 // ---------------------------------------------------------------------------
 // Minimal test runner

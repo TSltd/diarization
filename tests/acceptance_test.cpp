@@ -39,13 +39,13 @@
 #include <vector>
 
 // Project headers
-#include "../AudioRecordCommand.h"
-#include "../DiarizationCli.h"
-#include "../DiarizationStatus.h"
-#include "../ISpeakerEmbeddingModel.h"
-#include "../TranscriptFormatter.h"
-#include "../WhisperAdapter.h"
-#include "../tests/wav_reader.h"
+#include "adapters/AudioRecordCommand.h"
+#include "integration/DiarizationCli.h"
+#include "integration/DiarizationStatus.h"
+#include <diarization/ISpeakerEmbeddingModel.h>
+#include <diarization/TranscriptFormatter.h>
+#include "adapters/WhisperAdapter.h"
+#include "wav_reader.h"
 
 // ---------------------------------------------------------------------------
 // Stub model: deterministic embeddings derived from audio energy

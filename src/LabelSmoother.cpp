@@ -1,6 +1,6 @@
-#include "LabelSmoother.h"
+#include <diarization/LabelSmoother.h>
 
-#include "TranscriptFormatter.h"
+#include <diarization/TranscriptFormatter.h>
 
 // ---------------------------------------------------------------------------
 

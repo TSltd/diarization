@@ -51,14 +51,14 @@
 #include <vector>
 
 // Project headers (paths relative to repo root; compile from there)
-#include "AudioChunk.h"
-#include "DiarizationEngine.h"
-#include "ISpeakerEmbeddingModel.h"
-#include "TranscriptFormatter.h"
+#include <diarization/AudioChunk.h>
+#include <diarization/DiarizationEngine.h>
+#include <diarization/ISpeakerEmbeddingModel.h>
+#include <diarization/TranscriptFormatter.h>
 #include "tests/wav_reader.h"
 
 #ifdef DIARIZE_HAVE_MODEL
-#  include "WeSpeakerEcapaModel.h"
+#  include "models/WeSpeakerEcapaModel.h"
 #endif
 
 // ---------------------------------------------------------------------------

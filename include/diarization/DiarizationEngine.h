@@ -5,11 +5,11 @@
 #include <string>
 #include <vector>
 
-#include "AudioChunk.h"
-#include "ISpeakerEmbeddingModel.h"
-#include "LabelSmoother.h"
-#include "SpeakerClusterManager.h"
-#include "TranscriptFormatter.h"
+#include <diarization/AudioChunk.h>
+#include <diarization/ISpeakerEmbeddingModel.h>
+#include <diarization/LabelSmoother.h>
+#include <diarization/SpeakerClusterManager.h>
+#include <diarization/TranscriptFormatter.h>
 
 // ---------------------------------------------------------------------------
 // Configuration

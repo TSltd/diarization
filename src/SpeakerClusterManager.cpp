@@ -1,4 +1,4 @@
-#include "SpeakerClusterManager.h"
+#include <diarization/SpeakerClusterManager.h>
 
 #include <algorithm>
 #include <cassert>

@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "ISpeakerEmbeddingModel.h"
+#include <diarization/ISpeakerEmbeddingModel.h>
 
 // Forward-declare the ONNX Runtime session type to avoid pulling in the full
 // onnxruntime_cxx_api.h in headers that only need the interface.

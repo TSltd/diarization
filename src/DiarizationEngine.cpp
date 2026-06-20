@@ -1,4 +1,4 @@
-#include "DiarizationEngine.h"
+#include <diarization/DiarizationEngine.h>
 
 #include <algorithm>
 #include <map>

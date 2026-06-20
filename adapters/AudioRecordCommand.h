@@ -1,7 +1,7 @@
 #pragma once
 
 // ---------------------------------------------------------------------------
-// AudioRecordCommand.h
+// adapters/AudioRecordCommand.h
 //
 // Drop-in integration layer for pm-image-cli's `audio record` command.
 //
@@ -18,21 +18,21 @@
 //   4. AudioRecordCommand::finish()       — after whisper_full() returns
 //
 // Dependency headers that must be available at the call-site:
-//   #include "AssistantMerger.h"
-//   #include "DiarizationCli.h"
-//   #include "DiarizationEngine.h"
-//   #include "DiarizationStatus.h"
-//   #include "TranscriptFormatter.h"
-//   #include "WhisperAdapter.h"
-//   #include "WeSpeakerEcapaModel.h"   (or any ISpeakerEmbeddingModel)
+//   #include "integration/AssistantMerger.h"
+//   #include "integration/DiarizationCli.h"
+//   #include <diarization/DiarizationEngine.h>
+//   #include "integration/DiarizationStatus.h"
+//   #include <diarization/TranscriptFormatter.h>
+//   #include "adapters/WhisperAdapter.h"
+//   #include "models/WeSpeakerEcapaModel.h"   (or any ISpeakerEmbeddingModel)
 // ---------------------------------------------------------------------------
 
-#include "AssistantMerger.h"
-#include "DiarizationCli.h"
-#include "DiarizationEngine.h"
-#include "DiarizationStatus.h"
-#include "TranscriptFormatter.h"
-#include "WhisperAdapter.h"
+#include "integration/AssistantMerger.h"
+#include "integration/DiarizationCli.h"
+#include <diarization/DiarizationEngine.h>
+#include "integration/DiarizationStatus.h"
+#include <diarization/TranscriptFormatter.h>
+#include "adapters/WhisperAdapter.h"
 
 #include <chrono>
 #include <memory>
@@ -41,7 +41,7 @@
 #include <vector>
 
 // Forward-declare the model so callers can supply their own model factory
-// without pulling WeSpeakerEcapaModel.h into every TU.
+// without pulling models/WeSpeakerEcapaModel.h into every TU.
 class ISpeakerEmbeddingModel;
 
 // ---------------------------------------------------------------------------
