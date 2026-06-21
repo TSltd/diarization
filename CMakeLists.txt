@@ -29,6 +29,9 @@ target_include_directories(diarization_core PUBLIC include ${CMAKE_SOURCE_DIR})
 add_library(diarization_model STATIC
     models/WeSpeakerEcapaModel.cpp
     models/EcapaOnnxModel.cpp
+    models/SpeechBrainEcapaModel.cpp
+    models/SpeakerModelFactory.cpp
+    models/SpeakerVerifier.cpp
 )
 target_include_directories(diarization_model PUBLIC
     include

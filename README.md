@@ -12,6 +12,8 @@ requiring any pre-registered voice profiles.
 include/diarization/   Public headers  — compile with -Iinclude
   AudioChunk.h
   ISpeakerEmbeddingModel.h
+  ModelMetadata.h
+  SpeakerVerifier.h
   SpeakerCluster.h
   SpeakerClusterManager.h
   LabelSmoother.h
@@ -24,9 +26,13 @@ src/                   Core implementation
   LabelSmoother.cpp
   TranscriptFormatter.cpp
 
-models/                ONNX model adapter
-  WeSpeakerEcapaModel.h/.cpp
-  EcapaOnnxModel.h/.cpp
+models/                ONNX model adapters + shared utilities
+  WeSpeakerEcapaModel.h/.cpp    WeSpeaker ECAPA-TDNN (FBANK input)
+  SpeechBrainEcapaModel.h/.cpp  SpeechBrain ECAPA-TDNN (PCM or FBANK input)
+  SpeakerModelFactory.h/.cpp    Path-based model routing
+  SpeakerVerifier.h/.cpp        High-level verification API
+  EcapaOnnxModel.h/.cpp         Shared ONNX session wrapper
+  FBankFrontEnd.h               Header-only 80-dim log-mel filterbank
 
 adapters/              Integration shims
   AudioRecordCommand.h
@@ -45,18 +51,24 @@ wespeaker/             ONNX model weights (not committed by default)
 
 ## What's included
 
-| Path                                | Purpose                                                             |
-| ----------------------------------- | ------------------------------------------------------------------- |
-| `src/DiarizationEngine.cpp`         | Core pipeline: embed → cluster → label                              |
-| `src/SpeakerClusterManager.cpp`     | Cosine-similarity cluster manager                                   |
-| `src/LabelSmoother.cpp`             | Post-pass to remove single-segment speaker noise                    |
-| `src/TranscriptFormatter.cpp`       | Inline / SRT / VTT / JSON output formatters                         |
-| `models/WeSpeakerEcapaModel.h/.cpp` | ONNX ECAPA-TDNN speaker embedding model                             |
-| `adapters/AudioRecordCommand.h`     | Integration shim for `pm-image-cli`                                 |
-| `integration/AssistantMerger.h`     | Injects ASSISTANT TTS segments; clips overlapping diarized segments |
-| `integration/DiarizationStatus.h`   | Formats `audio record status` output                                |
-| `adapters/WhisperAdapter.h`         | Bridge from `whisper_context*` to `WhisperSegment`                  |
-| `integration/DiarizationCli.h`      | CLI argument struct (`--diarize`, `--speaker-model`, …)             |
+| Path                                           | Purpose                                                             |
+| ---------------------------------------------- | ------------------------------------------------------------------- |
+| `src/DiarizationEngine.cpp`                    | Core pipeline: embed → cluster → label                              |
+| `src/SpeakerClusterManager.cpp`                | Cosine-similarity cluster manager                                   |
+| `src/LabelSmoother.cpp`                        | Post-pass to remove single-segment speaker noise                    |
+| `src/TranscriptFormatter.cpp`                  | Inline / SRT / VTT / JSON output formatters                         |
+| `include/diarization/ModelMetadata.h`          | `ModelMetadata` struct + `describe()` (shape introspection)         |
+| `include/diarization/ISpeakerEmbeddingModel.h` | Abstract base for speaker embedding models (`embed`, `inspect`)     |
+| `include/diarization/SpeakerVerifier.h`        | High-level speaker verification API (factory-backed)                |
+| `models/WeSpeakerEcapaModel.h/.cpp`            | WeSpeaker ECAPA-TDNN: FBANK input `[1,T,80]`, embedding `[1,192]`   |
+| `models/SpeechBrainEcapaModel.h/.cpp`          | SpeechBrain ECAPA-TDNN: auto-detects raw PCM or FBANK input         |
+| `models/SpeakerModelFactory.h/.cpp`            | Path-based routing: detects WeSpeaker / SpeechBrain from filename   |
+| `models/FBankFrontEnd.h`                       | Header-only 80-dim log-mel filterbank (16 kHz, 25 ms/10 ms frames)  |
+| `adapters/AudioRecordCommand.h`                | Integration shim for `pm-image-cli`                                 |
+| `integration/AssistantMerger.h`                | Injects ASSISTANT TTS segments; clips overlapping diarized segments |
+| `integration/DiarizationStatus.h`              | Formats `audio record status` output                                |
+| `adapters/WhisperAdapter.h`                    | Bridge from `whisper_context*` to `WhisperSegment`                  |
+| `integration/DiarizationCli.h`                 | CLI argument struct (`--diarize`, `--speaker-model`, …)             |
 
 ---
 
@@ -80,36 +92,61 @@ pm-image-cli audio record --diarize --format json
 
 ---
 
-## Speaker model
+## Speaker models
 
-Drop any WeSpeaker-style ONNX model at `wespeaker/<name>.onnx` and pass
-`--speaker-model wespeaker/<name>.onnx`. The validated model is:
+Pass any supported ONNX model via `--speaker-model <path>`. The model type is
+auto-detected by `SpeakerModelFactory` from the filename:
+
+| Keyword in path                     | Model class             | Input                                                          |
+| ----------------------------------- | ----------------------- | -------------------------------------------------------------- |
+| `wespeaker`, `voxceleb`, `ecapa512` | `WeSpeakerEcapaModel`   | FBANK `[1, T, 80]`                                             |
+| `speechbrain`                       | `SpeechBrainEcapaModel` | Raw PCM `[1, T]` or FBANK `[1, T, 80]` (auto-detected at load) |
+| _(anything else)_                   | `WeSpeakerEcapaModel`   | FBANK `[1, T, 80]`                                             |
+
+### Validated models
 
 | Model                       | Dim | RTF (112 s file) | Peak RSS |
 | --------------------------- | --- | ---------------- | -------- |
-| `voxceleb_ECAPA512_LM.onnx` | 192 | 0.049 (20×RT)    | ~122 MB  |
+| `voxceleb_ECAPA512_LM.onnx` | 192 | 0.0909 (11×RT)   | ~121 MB  |
 
 **Download:**
 [`voxceleb_ECAPA512_LM.onnx`](https://huggingface.co/Wespeaker/wespeaker-ecapa-tdnn512-LM/blob/main/voxceleb_ECAPA512_LM.onnx)
 on HuggingFace — `Wespeaker/wespeaker-ecapa-tdnn512-LM`.
 Place the file at `wespeaker/voxceleb_ECAPA512_LM.onnx` inside the repo root.
 
+### Model introspection
+
+After loading, call `SpeakerVerifier::inspect()` to retrieve input/output shapes:
+
+```cpp
+SpeakerVerifier verifier;
+verifier.load("wespeaker/voxceleb_ECAPA512_LM.onnx");
+auto meta = verifier.inspect();
+std::cout << meta.describe();
+// Input:  feats [1, ?, 80]
+// Output: embs [1, 192]
+```
+
+`ModelMetadata` is also accessible via `ISpeakerEmbeddingModel::inspect()` on
+any model class directly.
+
 **Note:** `GetShape()` on static type info crashes on piper's ORT 1.22 build
 (dynamic `-1` dims cause `GetDimensionsCount` to return garbage). Fixed in
-`WeSpeakerEcapaModel::load()` via a calibration forward pass with silent input.
+both `WeSpeakerEcapaModel::load()` and `SpeechBrainEcapaModel::load()` via a
+calibration forward pass with silent input.
 
 ---
 
-## CI results (20 Jun 2026)
+## CI results (21 Jun 2026)
 
 | Step                          | Result                             |
 | ----------------------------- | ---------------------------------- |
-| unit_tests                    | ✅ 57 passed                       |
+| unit_tests                    | ✅ 75 passed                       |
 | integration_tests (stub)      | ✅ 201 620 passed                  |
-| integration_tests_real (ONNX) | ✅ 201 627 passed                  |
+| integration_tests_real (ONNX) | ✅ 201 642 passed                  |
 | acceptance_test               | ✅ all 4 formats + AssistantMerger |
-| bench stub (112 s)            | ✅ RTF 0.0002, 32 MB RSS           |
-| bench real (112 s)            | ✅ RTF 0.049, 122 MB RSS           |
+| bench stub (112 s)            | ✅ RTF 0.0007, 32 MB RSS           |
+| bench real (112 s)            | ✅ RTF 0.0909, 121 MB RSS          |
 
 ---
 
@@ -126,23 +163,30 @@ Downloaded from <https://www.uclass.psychol.ucl.ac.uk/Release2/Conversation/Audi
 
 ## Status
 
-| Requirement                      | Status |
-| -------------------------------- | ------ |
-| Standalone diarization engine    | ✅     |
-| Whisper integration              | ✅     |
-| ONNX speaker model support       | ✅     |
-| Clustering                       | ✅     |
-| Label smoothing                  | ✅     |
-| JSON / SRT / VTT / inline output | ✅     |
-| `audio record status`            | ✅     |
-| Assistant/TTS merge              | ✅     |
-| Acceptance test                  | ✅     |
-| Real-model integration test      | ✅     |
-| Benchmark (stub + real)          | ✅     |
-| Documentation                    | ✅     |
+| Requirement                                   | Status |
+| --------------------------------------------- | ------ |
+| Standalone diarization engine                 | ✅     |
+| Whisper integration                           | ✅     |
+| ONNX speaker model support                    | ✅     |
+| Multi-model support (WeSpeaker + SpeechBrain) | ✅     |
+| Path-based model factory                      | ✅     |
+| Model metadata / shape introspection          | ✅     |
+| Shared FBANK front-end                        | ✅     |
+| Clustering                                    | ✅     |
+| Label smoothing                               | ✅     |
+| JSON / SRT / VTT / inline output              | ✅     |
+| `audio record status`                         | ✅     |
+| Assistant/TTS merge                           | ✅     |
+| Acceptance test                               | ✅     |
+| Real-model integration test                   | ✅     |
+| Benchmark (stub + real)                       | ✅     |
+| Documentation                                 | ✅     |
 
 Real ECAPA-TDNN model (`voxceleb_ECAPA512_LM.onnx`, dim=192) validated:
 
-- loads and embeds correctly
+- loads and embeds correctly via `SpeakerVerifier` (factory-routed)
+- `inspect()` returns correct shape: `Input: feats [1, ?, 80]  Output: embs [1, 192]`
 - same-chunk cosine similarity = 1.0000
-- 12.6 s test file processed in 489 ms (25.8× real-time)
+- short-clip embedding L2 norm = 1.0000
+- cross-chunk cosine (first vs last second) = 0.5144
+- 112 s file processed at RTF 0.0909 (11× real-time), 121 MB RSS

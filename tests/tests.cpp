@@ -24,9 +24,13 @@
 #include <diarization/DiarizationEngine.h>
 #include <diarization/ISpeakerEmbeddingModel.h>
 #include <diarization/LabelSmoother.h>
+#include <diarization/ModelMetadata.h>
 #include <diarization/SpeakerCluster.h>
 #include <diarization/SpeakerClusterManager.h>
 #include <diarization/TranscriptFormatter.h>
+
+// models/SpeakerModelFactory.h contains detect_flavor() inline — no ONNX link needed
+#include "models/SpeakerModelFactory.h"
 
 // ---------------------------------------------------------------------------
 // Minimal test runner
@@ -494,6 +498,64 @@ TEST(JsonSchemaFields) {
 
     // Plain-text field is the concatenated speaker: text form.
     EXPECT(json.find("SPEAKER_00: Open the settings.") != std::string::npos);
+}
+
+// ---------------------------------------------------------------------------
+// ModelMetadata
+// ---------------------------------------------------------------------------
+
+TEST(ModelMetadata_describe_unloaded) {
+    ModelMetadata m;
+    // Default-constructed: loaded = false → fixed placeholder string
+    EXPECT(m.describe() == "(model not loaded)");
+}
+
+TEST(ModelMetadata_describe_loaded) {
+    ModelMetadata m;
+    m.input_name   = "feats";
+    m.output_name  = "embs";
+    m.input_shape  = {1, -1, 80};   // -1 = dynamic dim → rendered as '?'
+    m.output_shape = {1, 192};
+    m.loaded       = true;
+    auto d = m.describe();
+    // Should contain both node names
+    EXPECT(d.find("feats") != std::string::npos);
+    EXPECT(d.find("embs")  != std::string::npos);
+    // Dynamic dim rendered as '?'
+    EXPECT(d.find('?') != std::string::npos);
+    // Known dim present
+    EXPECT(d.find("192") != std::string::npos);
+    EXPECT(d.find("80")  != std::string::npos);
+}
+
+// ---------------------------------------------------------------------------
+// SpeakerModelFactory — detect_flavor() is inline; no ONNX linkage required
+// ---------------------------------------------------------------------------
+
+TEST(SpeakerModelFactory_detect_wespeaker) {
+    using F = SpeakerModelFactory::Flavor;
+    EXPECT(SpeakerModelFactory::detect_flavor("wespeaker/voxceleb_ECAPA512_LM.onnx") == F::WeSpeaker);
+    EXPECT(SpeakerModelFactory::detect_flavor("models/voxceleb_ecapa.onnx")          == F::WeSpeaker);
+    EXPECT(SpeakerModelFactory::detect_flavor("ECAPA512_model.onnx")                 == F::WeSpeaker);
+    // Case-insensitive
+    EXPECT(SpeakerModelFactory::detect_flavor("WeSpeaker/ECAPA.onnx")                == F::WeSpeaker);
+}
+
+TEST(SpeakerModelFactory_detect_speechbrain) {
+    using F = SpeakerModelFactory::Flavor;
+    EXPECT(SpeakerModelFactory::detect_flavor("speechbrain_ecapa.onnx")             == F::SpeechBrain);
+    EXPECT(SpeakerModelFactory::detect_flavor("models/SpeechBrain_TDNN.onnx")       == F::SpeechBrain);
+    EXPECT(SpeakerModelFactory::detect_flavor("/data/SpeechBrain/model.onnx")       == F::SpeechBrain);
+    // Case-insensitive
+    EXPECT(SpeakerModelFactory::detect_flavor("SPEECHBRAIN_ECAPA.onnx")             == F::SpeechBrain);
+}
+
+TEST(SpeakerModelFactory_detect_unknown) {
+    using F = SpeakerModelFactory::Flavor;
+    EXPECT(SpeakerModelFactory::detect_flavor("some_model.onnx")        == F::Unknown);
+    EXPECT(SpeakerModelFactory::detect_flavor("")                        == F::Unknown);
+    EXPECT(SpeakerModelFactory::detect_flavor("ecapa_tdnn.onnx")        == F::Unknown);
+    EXPECT(SpeakerModelFactory::detect_flavor("speaker_embedding.onnx") == F::Unknown);
 }
 
 // ---------------------------------------------------------------------------

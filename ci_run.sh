@@ -46,7 +46,9 @@ $CXX -Iinclude -I. \
 echo "  [build] integration_tests_real (ONNX model)..."
 $CXX -Iinclude -I. -DDIARIZE_HAVE_MODEL \
   -I"$ORT_INC" \
-  tests/integration_tests.cpp $SRCS_CORE models/WeSpeakerEcapaModel.cpp \
+  tests/integration_tests.cpp $SRCS_CORE \
+  models/WeSpeakerEcapaModel.cpp models/EcapaOnnxModel.cpp \
+  models/SpeechBrainEcapaModel.cpp models/SpeakerModelFactory.cpp models/SpeakerVerifier.cpp \
   -L"$ORT_LIB" -Wl,-rpath,"$ORT_LIB" -lonnxruntime \
   -o tests/integration_tests_real 2>&1 \
   && pass "integration_tests_real built" || fail "integration_tests_real BUILD FAILED"
@@ -66,7 +68,9 @@ $CXX -Iinclude -I. \
 echo "  [build] diarization_bench_real (ONNX model)..."
 $CXX -Iinclude -I. -DDIARIZE_HAVE_MODEL \
   -I"$ORT_INC" \
-  bench/diarization_bench.cpp $SRCS_CORE models/WeSpeakerEcapaModel.cpp \
+  bench/diarization_bench.cpp $SRCS_CORE \
+  models/WeSpeakerEcapaModel.cpp models/EcapaOnnxModel.cpp \
+  models/SpeechBrainEcapaModel.cpp models/SpeakerModelFactory.cpp models/SpeakerVerifier.cpp \
   -L"$ORT_LIB" -Wl,-rpath,"$ORT_LIB" -lonnxruntime \
   -o bench/diarization_bench_real 2>&1 \
   && pass "diarization_bench_real built" || fail "diarization_bench_real BUILD FAILED"

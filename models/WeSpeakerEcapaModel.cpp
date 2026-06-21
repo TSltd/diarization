@@ -78,6 +78,22 @@ bool WeSpeakerEcapaModel::load(const std::string& model_path) {
                 embedding_dim_ = static_cast<int>(run_shape[0]);
         }
 
+        // ---- Populate ModelMetadata -----------------------------------------
+        metadata_.input_name  = input_node_;
+        metadata_.output_name = output_node_;
+        // Try to read input static shape; on piper's ORT build GetShape() can
+        // return garbage for dynamic dims — wrap in try/catch and fall back to
+        // the known WeSpeaker contract [1, T, 80].
+        try {
+            auto in_info = ort_->session->GetInputTypeInfo(0)
+                                        .GetTensorTypeAndShapeInfo();
+            metadata_.input_shape = in_info.GetShape();
+        } catch (...) {
+            metadata_.input_shape = {1, -1, kMelBins};
+        }
+        metadata_.output_shape = {1, static_cast<int64_t>(embedding_dim_)};
+        metadata_.loaded = true;
+
         return true;
     } catch (const Ort::Exception& e) {
         std::fprintf(stderr, "WeSpeakerEcapaModel::load OrtException: %s\n", e.what());

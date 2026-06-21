@@ -4,10 +4,11 @@
 #include <vector>
 
 #include <diarization/AudioChunk.h>
+#include <diarization/ModelMetadata.h>
 
 /// Abstract interface for speaker embedding models.
-/// A concrete implementation (e.g. EcapaOnnxModel) loads an ONNX model and
-/// converts an AudioChunk into a fixed-length L2-normalised embedding vector.
+/// A concrete implementation (e.g. WeSpeakerEcapaModel) loads an ONNX model
+/// and converts an AudioChunk into a fixed-length L2-normalised embedding.
 class ISpeakerEmbeddingModel {
 public:
     virtual ~ISpeakerEmbeddingModel() = default;
@@ -24,4 +25,9 @@ public:
 
     /// Dimensionality of the output embedding vector.
     virtual int embedding_dim() const = 0;
+
+    /// Return metadata about the loaded ONNX graph (node names, shapes).
+    /// Returns a default-constructed (unloaded) ModelMetadata if load() has
+    /// not yet been called.  Default implementation returns empty metadata.
+    virtual ModelMetadata inspect() const { return {}; }
 };

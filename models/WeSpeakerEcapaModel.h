@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <diarization/ISpeakerEmbeddingModel.h>
+#include <diarization/ModelMetadata.h>
 
 // Forward-declare ONNX Runtime types to keep the header lightweight.
 namespace Ort { class Session; class Env; class SessionOptions; }
@@ -53,6 +54,7 @@ public:
     std::vector<float> embed(const AudioChunk& chunk)      override;
     int                sample_rate()   const override { return 16000; }
     int                embedding_dim() const override { return embedding_dim_; }
+    ModelMetadata      inspect()       const override { return metadata_; }
 
 private:
     // ---- FBANK front-end ---------------------------------------------------
@@ -82,6 +84,8 @@ private:
 
     struct OrtState;
     std::unique_ptr<OrtState> ort_;
+
+    ModelMetadata metadata_;
 
     std::string input_node_;
     std::string output_node_;

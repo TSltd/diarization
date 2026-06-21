@@ -35,6 +35,8 @@
 
 #ifdef DIARIZE_HAVE_MODEL
 #include "models/WeSpeakerEcapaModel.h"
+#include "models/SpeakerModelFactory.h"
+#include <diarization/SpeakerVerifier.h>
 #endif
 
 // ---------------------------------------------------------------------------
@@ -332,6 +334,121 @@ TEST(RealModelRoundTrip) {
         std::printf("  INFO  same-chunk cosine similarity = %.4f\n", dot);
         EXPECT(dot >= 0.90f); // identical audio must produce nearly identical embeddings
     }
+}
+
+// ---------------------------------------------------------------------------
+// SpeakerVerifier via factory
+// ---------------------------------------------------------------------------
+
+TEST(SpeakerVerifier_factory_load_and_inspect) {
+    if (g_model_path.empty()) {
+        std::printf("  SKIP  (no model path)\n");
+        return;
+    }
+
+    // Factory should pick WeSpeakerEcapaModel for voxceleb_ECAPA512_LM.onnx
+    EXPECT(SpeakerModelFactory::detect_flavor(g_model_path) ==
+           SpeakerModelFactory::Flavor::WeSpeaker);
+
+    SpeakerVerifier sv;
+    EXPECT(sv.load(g_model_path));
+
+    auto meta = sv.inspect();
+    EXPECT(meta.loaded);
+    std::printf("  INFO  model graph:\n        %s\n",
+                meta.describe().c_str());
+
+    EXPECT(!meta.input_name.empty());
+    EXPECT(!meta.output_name.empty());
+    // Output should be [1, D] with D > 0
+    EXPECT(meta.output_shape.size() >= 2);
+    EXPECT(meta.output_shape.back() > 0);
+}
+
+TEST(SpeakerVerifier_same_chunk_cosine) {
+    if (g_model_path.empty() || g_wav_path.empty()) {
+        std::printf("  SKIP  (no model or wav path)\n");
+        return;
+    }
+
+    auto audio = wav::read_wav_mono_16k(g_wav_path);
+    if (audio.samples.size() < 16000) {
+        std::printf("  SKIP  (audio too short)\n");
+        return;
+    }
+
+    SpeakerVerifier sv;
+    EXPECT(sv.load(g_model_path));
+
+    // Extract the first second twice — identical audio must yield cosine ≥ 0.90
+    AudioChunk chunk_a, chunk_b;
+    chunk_a.sample_rate = 16000;
+    chunk_a.samples = std::vector<float>(audio.samples.begin(),
+                                          audio.samples.begin() + 16000);
+    chunk_b = chunk_a;
+
+    float cosine = sv.similarity(chunk_a, chunk_b);
+    std::printf("  INFO  same-chunk cosine (SpeakerVerifier) = %.4f\n", cosine);
+    EXPECT(cosine >= 0.90f);
+
+    // verify() with a low threshold should pass
+    EXPECT(sv.verify(chunk_a, chunk_b, 0.72f));
+}
+
+TEST(SpeakerVerifier_short_clip_valid_embedding) {
+    if (g_model_path.empty()) {
+        std::printf("  SKIP  (no model path)\n");
+        return;
+    }
+
+    // 0.5 s of near-silence (8000 samples — well above one FBANK frame)
+    AudioChunk chunk;
+    chunk.sample_rate = 16000;
+    chunk.samples.assign(8000, 0.01f);
+
+    SpeakerVerifier sv;
+    EXPECT(sv.load(g_model_path));
+
+    auto emb = sv.embed(chunk);
+    EXPECT(!emb.empty());
+    std::printf("  INFO  short-clip embedding dim = %zu\n", emb.size());
+
+    // L2 norm should be ≈ 1.0 (model outputs normalised vectors)
+    float norm = 0.0f;
+    for (float x : emb) norm += x * x;
+    norm = std::sqrt(norm);
+    std::printf("  INFO  short-clip embedding L2 norm = %.4f\n", norm);
+    EXPECT(norm > 0.9f && norm < 1.1f);
+}
+
+TEST(SpeakerVerifier_cross_chunk_cosine_bounded) {
+    if (g_model_path.empty() || g_wav_path.empty()) {
+        std::printf("  SKIP  (no model or wav path)\n");
+        return;
+    }
+
+    auto audio = wav::read_wav_mono_16k(g_wav_path);
+    if (audio.samples.size() < 64000) {
+        std::printf("  SKIP  (audio too short for cross-chunk test)\n");
+        return;
+    }
+
+    SpeakerVerifier sv;
+    EXPECT(sv.load(g_model_path));
+
+    // First second vs last second — may or may not be the same speaker
+    AudioChunk a, b;
+    a.sample_rate = b.sample_rate = 16000;
+    a.samples = std::vector<float>(audio.samples.begin(),
+                                    audio.samples.begin() + 16000);
+    b.samples = std::vector<float>(audio.samples.end() - 16000,
+                                    audio.samples.end());
+
+    float cosine = sv.similarity(a, b);
+    std::printf("  INFO  cross-chunk cosine (first vs last second) = %.4f\n", cosine);
+
+    // L2-normalised vectors: cosine is always in [-1, 1]
+    EXPECT(cosine >= -1.0f && cosine <= 1.0f);
 }
 #endif // DIARIZE_HAVE_MODEL
 
