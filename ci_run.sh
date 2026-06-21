@@ -117,7 +117,40 @@ else
   echo "  (skipped — build failed)"
 fi
 
-# ─── 9. FINAL SUMMARY ────────────────────────────────────────────────────────
+# ─── 9. SPEAKER VERIFICATION (optional — requires testdata/verification/) ────
+section "9. Speaker verification (real model)"
+
+VERIF_DIR="testdata/verification"
+VERIF_BIN="tests/verification_test"
+VERIF_WAV_COUNT=$(ls "$VERIF_DIR"/speaker*.wav 2>/dev/null | wc -l)
+
+if [[ $VERIF_WAV_COUNT -lt 6 ]]; then
+  echo "  (skipped — $VERIF_DIR has ${VERIF_WAV_COUNT} WAV file(s); need ≥6)"
+  echo "  To populate:  python tests/gen_verification_wavs.py"
+else
+  # Build verification_test if not already built or stale
+  if [[ ! -x "$VERIF_BIN" ]]; then
+    echo "  [build] verification_test..."
+    $CXX -Iinclude -I. -DDIARIZE_HAVE_MODEL \
+      -I"$ORT_INC" \
+      tests/verification_test.cpp $SRCS_CORE \
+      models/WeSpeakerEcapaModel.cpp models/EcapaOnnxModel.cpp \
+      models/SpeechBrainEcapaModel.cpp models/SpeakerModelFactory.cpp \
+      models/SpeakerVerifier.cpp \
+      -L"$ORT_LIB" -Wl,-rpath,"$ORT_LIB" -lonnxruntime \
+      -o "$VERIF_BIN" 2>&1 \
+      && echo "  ✓  verification_test built" \
+      || { fail "verification_test BUILD FAILED"; VERIF_BIN=""; }
+  fi
+
+  if [[ -x "$VERIF_BIN" ]]; then
+    ./"$VERIF_BIN" "$MODEL" "$VERIF_DIR" \
+      && pass "verification test PASSED" \
+      || fail "verification test FAILED"
+  fi
+fi
+
+# ─── 10. FINAL SUMMARY ───────────────────────────────────────────────────────
 section "CI Summary"
 echo "  Pass: $PASS"
 echo "  Fail: $FAIL"

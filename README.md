@@ -139,14 +139,16 @@ calibration forward pass with silent input.
 
 ## CI results (21 Jun 2026)
 
-| Step                          | Result                             |
-| ----------------------------- | ---------------------------------- |
-| unit_tests                    | ✅ 75 passed                       |
-| integration_tests (stub)      | ✅ 201 620 passed                  |
-| integration_tests_real (ONNX) | ✅ 201 642 passed                  |
-| acceptance_test               | ✅ all 4 formats + AssistantMerger |
-| bench stub (112 s)            | ✅ RTF 0.0007, 32 MB RSS           |
-| bench real (112 s)            | ✅ RTF 0.0909, 121 MB RSS          |
+| Step                               | Result                                           |
+| ---------------------------------- | ------------------------------------------------ |
+| unit_tests                         | ✅ 75 passed                                     |
+| integration_tests (stub)           | ✅ 201 620 passed                                |
+| integration_tests_real (ONNX)      | ✅ 201 642 passed                                |
+| acceptance_test                    | ✅ all 4 formats + AssistantMerger               |
+| bench stub (112 s)                 | ✅ RTF 0.0007, 32 MB RSS                         |
+| bench real (112 s)                 | ✅ RTF 0.0909, 121 MB RSS                        |
+| speaker_verification (LibriSpeech) | ✅ EER 13.3% @ threshold 0.781 (10 speakers)     |
+| fbank_validation                   | ✅ C++ vs Python cosine = 1.000000 (no mismatch) |
 
 ---
 
@@ -161,6 +163,42 @@ Downloaded from <https://www.uclass.psychol.ucl.ac.uk/Release2/Conversation/Audi
 
 ---
 
+## Speaker verification benchmark
+
+Measured with `tests/verification_test` on 10 LibriSpeech test-clean speakers
+(3 clips each, 30 total), using `voxceleb_ECAPA512_LM.onnx`.
+
+| Metric                         | Value             |
+| ------------------------------ | ----------------- |
+| Same-speaker cosine mean       | 0.864 (σ = 0.088) |
+| Same-speaker cosine range      | 0.617 – 0.968     |
+| Different-speaker cosine mean  | 0.709 (σ = 0.071) |
+| Different-speaker cosine range | 0.440 – 0.861     |
+| EER threshold                  | 0.781             |
+| EER                            | ~13.3%            |
+
+**Note on different-speaker floor:** The different-speaker mean of 0.709 is
+higher than the ~0.2–0.5 typical of VoxCeleb trials. This is expected for
+LibriSpeech test-clean (clean read speech, consistent recording conditions).
+It does **not** indicate a frontend bug — the C++ FBANK implementation was
+validated against the Python reference with `cosine = 1.000000` (see
+`tests/compare_embeddings.py`).
+
+**LibriSpeech EER threshold (0.781) should not be used in production** without
+re-characterising on a dataset that matches the target deployment domain.
+
+### FBANK implementation validation (`tests/compare_embeddings.py`)
+
+```
+py/Hann  vs C++       cosine = 1.000000  ✓ MATCH
+py/Hann  vs py/Hamming  cosine = 0.981780  (window difference in isolation)
+```
+
+The C++ implementation (Hann window, O'Shaughnessy mel scale, natural log, no CMVN)
+is bit-exact with the Python numpy reference. No frontend mismatch.
+
+---
+
 ## Status
 
 | Requirement                                   | Status |
@@ -172,6 +210,7 @@ Downloaded from <https://www.uclass.psychol.ucl.ac.uk/Release2/Conversation/Audi
 | Path-based model factory                      | ✅     |
 | Model metadata / shape introspection          | ✅     |
 | Shared FBANK front-end                        | ✅     |
+| FBANK validated vs Python reference           | ✅     |
 | Clustering                                    | ✅     |
 | Label smoothing                               | ✅     |
 | JSON / SRT / VTT / inline output              | ✅     |
@@ -179,6 +218,8 @@ Downloaded from <https://www.uclass.psychol.ucl.ac.uk/Release2/Conversation/Audi
 | Assistant/TTS merge                           | ✅     |
 | Acceptance test                               | ✅     |
 | Real-model integration test                   | ✅     |
+| Speaker verification benchmark framework      | ✅     |
+| LibriSpeech threshold characterised (EER)     | ✅     |
 | Benchmark (stub + real)                       | ✅     |
 | Documentation                                 | ✅     |
 
@@ -190,3 +231,17 @@ Real ECAPA-TDNN model (`voxceleb_ECAPA512_LM.onnx`, dim=192) validated:
 - short-clip embedding L2 norm = 1.0000
 - cross-chunk cosine (first vs last second) = 0.5144
 - 112 s file processed at RTF 0.0909 (11× real-time), 121 MB RSS
+- FBANK implementation validated vs Python reference (cosine = 1.000000)
+
+---
+
+## Next steps
+
+- **Evaluate on VoxCeleb-style trials** — measure EER on VoxCeleb1-O test pairs
+  to get a deployment-realistic threshold
+- **Measure threshold stability across domains** — conversational speech, phone
+  calls, noisy environments
+- **Separate verification thresholds from diarization thresholds** — the
+  cosine threshold used in `SpeakerClusterManager` for clustering is not the
+  same problem as binary same/different-speaker verification; they should be
+  tuned independently

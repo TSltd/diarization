@@ -3,8 +3,10 @@ tests/unit_tests
 tests/integration_tests
 tests/integration_tests_real
 tests/acceptance_test
+tests/verification_test
 bench/diarization_bench
 bench/diarization_bench_real
+tools/embed_wav
 
 # Object files / dependency files
 *.o
@@ -31,6 +33,9 @@ Thumbs.db
 *.swo
 *~
 
+# ── Python virtualenv ────────────────────────────────────────────────────────
+.venv/
+
 # ── Python cache ─────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
@@ -42,6 +47,10 @@ build/
 # ── Large binary assets (tracked via LFS or separately) ─────────────────────
 # testdata/audio/ contains ~10-35 MB WAV files — uncomment to exclude from git
 # testdata/audio/
+
+# testdata/verification/ contains 30 generated WAVs from LibriSpeech (~15 MB)
+# Regenerate with: python3 tests/gen_verification_wavs.py
+testdata/verification/
 
 # wespeaker/ contains the ONNX model (~24 MB) — uncomment to exclude
 # wespeaker/
