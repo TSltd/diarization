@@ -4,9 +4,11 @@ tests/integration_tests
 tests/integration_tests_real
 tests/acceptance_test
 tests/verification_test
+tests/verification_trials
 bench/diarization_bench
 bench/diarization_bench_real
 tools/embed_wav
+tools/check_trials
 
 # Object files / dependency files
 *.o
@@ -56,3 +58,7 @@ testdata/verification/
 # wespeaker/
 
 dev/
+
+# testdata/voxceleb_trials/audio/voxceleb1_cd contains 2240 items (2076 .wav files, 164 folders)
+# a subset of the voxceleb1 dataset
+testdata/voxceleb_trials/audio/voxceleb1_cd/
