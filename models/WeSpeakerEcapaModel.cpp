@@ -235,6 +235,19 @@ std::vector<float> WeSpeakerEcapaModel::compute_fbank(
         }
     }
 
+    // Utterance-level CMN (mean subtraction only)
+    for (int m = 0; m < kMelBins; ++m) {
+        float mean = 0.0f;
+
+        for (int f = 0; f < n_frames; ++f)
+            mean += out[f * kMelBins + m];
+
+        mean /= static_cast<float>(n_frames);
+
+        for (int f = 0; f < n_frames; ++f)
+            out[f * kMelBins + m] -= mean;
+    }
+
     return out;
 }
 

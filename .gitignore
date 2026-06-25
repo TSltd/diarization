@@ -59,6 +59,16 @@ testdata/verification/
 
 dev/
 
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# VS Code
+.vscode/
+
 # testdata/voxceleb_trials/audio/voxceleb1_cd contains 2240 items (2076 .wav files, 164 folders)
 # a subset of the voxceleb1 dataset
 testdata/voxceleb_trials/audio/voxceleb1_cd/

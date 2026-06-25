@@ -19,6 +19,14 @@
 //       -o run_integration && ./run_integration \
 //       dist/models/speaker-ecapa.onnx \
 //       test_two_speakers.wav
+//
+//
+// Run trial:
+//
+// ./tests/verification_trials \
+wespeaker/voxceleb_ECAPA512_LM.onnx \
+/home/dan/Datasets/voxceleb/meta/veri_test.txt \
+/home/dan/Datasets/voxceleb/voxceleb1
 
 #include <cassert>
 #include <chrono>

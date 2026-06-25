@@ -31,8 +31,10 @@
 // Run:
 //   ./tests/verification_trials \
 //       wespeaker/voxceleb_ECAPA512_LM.onnx \
-//       generated_trials.txt \
-//       testdata/voxceleb_trials/audio/voxceleb1_cd
+//       testdata/voxceleb_trials/trials.txt \
+//       ~/Datasets/voxceleb1
+
+#include <filesystem>
 
 #include <algorithm>
 #include <cassert>
@@ -52,6 +54,20 @@
 #include "tests/wav_reader.h"
 
 using Clock = std::chrono::steady_clock;
+
+
+
+namespace fs = std::filesystem;
+
+fs::path resolve(const fs::path& base, const std::string& trial_path)
+{
+    fs::path tp(trial_path);
+
+    if (!tp.empty() && *tp.begin() == "voxceleb1")
+        tp = tp.lexically_relative("voxceleb1");
+
+    return base / tp;
+}
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -278,16 +294,32 @@ int main(int argc, char* argv[])
     // Embed each
     std::map<std::string, std::vector<float>> embeddings;
 
-    int n_ok = 0, n_fail = 0;
+    int n_ok = 0;
+    int n_fail = 0;          // embedding/read failures
+    int missing_files = 0;   // file does not exist
     auto t0 = Clock::now();
 
     for (size_t i = 0; i < unique_paths.size(); ++i) {
         const std::string& rel  = unique_paths[i];
-        const std::string  full = audio_base + "/" + rel;
+       
+        const fs::path resolved = resolve(audio_base, rel);
+
+        if (!fs::exists(resolved)) {
+            ++missing_files;
+            
+            if (missing_files <= 10)
+                std::cerr << "│  MISSING: "
+                        << resolved.lexically_normal().string()
+                        << "\n";
+            continue;
+        }
+
 
         try {
-            AudioBuffer buf = wav::read_wav_mono_16k(full);
-            if (buf.samples.empty()) throw std::runtime_error("empty audio");
+            AudioBuffer buf = wav::read_wav_mono_16k(resolved.string());
+
+            if (buf.samples.empty())
+                throw std::runtime_error("empty audio");
 
             AudioChunk chunk;
             chunk.samples     = buf.samples;
@@ -297,7 +329,7 @@ int main(int argc, char* argv[])
                 buf.samples.size() * 1000 / buf.sample_rate);
 
             auto emb = verifier.embed(chunk);
-            embeddings[rel] = std::move(emb);
+            embeddings[resolved.lexically_normal().string()] = std::move(emb);
             ++n_ok;
 
             if (i % 100 == 0 || i == unique_paths.size() - 1) {
@@ -305,7 +337,8 @@ int main(int argc, char* argv[])
                           << "/" << unique_paths.size() << "]  " << rel << "\n";
             }
         } catch (const std::exception& ex) {
-            std::cerr << "│  WARN: " << rel << " — " << ex.what() << "\n";
+            std::cerr << "│  WARN: " << rel
+                    << " — " << ex.what() << "\n";
             ++n_fail;
         }
     }
@@ -316,16 +349,21 @@ int main(int argc, char* argv[])
     const int cache_misses = n_ok;   // one disk read per unique path
     const int cache_hits   = static_cast<int>(trials.size()) * 2 - cache_misses;
 
-    std::cout << "│\n"
-              << "│  Embeddings computed: " << cache_misses << "\n"
-              << "│  Cache hits:          " << cache_hits   << "\n"
-              << "│  Cache misses:        " << cache_misses << "\n";
+    std::cout
+        << "│  Embeddings computed: " << cache_misses << "\n"
+        << "│  Cache hits:          " << cache_hits   << "\n"
+        << "│  Cache misses:        " << cache_misses << "\n";
+
+    if (missing_files > 0)
+        std::cout << "│  Missing WAV files:   " << missing_files << "\n";
+
     if (n_fail > 0)
         std::cout << "│  Embed failures:      " << n_fail << "\n";
+
     std::cout << "│  Time:   " << std::fixed << std::setprecision(0)
-              << embed_ms << " ms  ("
-              << std::setprecision(1) << (embed_ms / std::max(1, n_ok)) << " ms/utt)\n"
-              << "└────────────────────────────────────────────────────────\n\n";
+                << embed_ms << " ms  ("
+                << std::setprecision(1) << (embed_ms / std::max(1, n_ok)) << " ms/utt)\n"
+                << "└────────────────────────────────────────────────────────\n\n";
 
     // ── Score all trials ──────────────────────────────────────────────────────
     std::cout << "┌─ Scoring trials\n│\n";
@@ -334,8 +372,11 @@ int main(int argc, char* argv[])
     int n_skipped = 0;
 
     for (const auto& t : trials) {
-        auto itA = embeddings.find(t.pathA);
-        auto itB = embeddings.find(t.pathB);
+        auto keyA = resolve(audio_base, t.pathA).lexically_normal().string();
+        auto keyB = resolve(audio_base, t.pathB).lexically_normal().string();
+
+        auto itA = embeddings.find(keyA);
+        auto itB = embeddings.find(keyB);
         if (itA == embeddings.end() || itB == embeddings.end()) {
             ++n_skipped;
             continue;
@@ -351,7 +392,8 @@ int main(int argc, char* argv[])
 
     std::cout << "│  same-speaker pairs scored:  " << same_scores.size() << "\n"
               << "│  diff-speaker pairs scored:  " << diff_scores.size() << "\n"
-              << "│  Trial files missing:        " << n_fail << "\n";
+              << "│  Missing WAV files:          " << missing_files << "\n"
+                << "│  Embed failures:            " << n_fail << "\n";
     if (n_skipped > 0)
         std::cout << "│  skipped (missing embedding): " << n_skipped << "\n";
     std::cout << "└────────────────────────────────────────────────────────\n\n";

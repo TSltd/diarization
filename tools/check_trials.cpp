@@ -15,20 +15,36 @@
 //   g++ -std=c++20 -O2 tools/check_trials.cpp -o tools/check_trials
 //
 // Example:
-//   ./tools/check_trials \
-//       testdata/voxceleb_trials/trials.txt \
-//       testdata/voxceleb_trials/audio/voxceleb1_cd
+//   ./tools/check_trials ~/Datasets/voxceleb/meta/list_test_all.txt ~/Datasets/voxceleb/voxceleb1
+//       
+//       
 
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 
+fs::path resolve(const fs::path& base, const std::string& trial_path)
+{
+    fs::path tp(trial_path);
+
+    if (!tp.empty() && *tp.begin() == "voxceleb1")
+        tp = tp.lexically_relative("voxceleb1");
+
+    return base / tp;
+}
+
 int main(int argc, char* argv[])
 {
+    std::vector<std::string> missing_examples;
+    std::unordered_set<std::string> seen_missing;
+
     if (argc < 3) {
         std::cerr
             << "Usage: check_trials <trials.txt> <audio_base_dir>\n"
@@ -49,6 +65,7 @@ int main(int argc, char* argv[])
     long long n_total      = 0;
     long long n_resolvable = 0;
     long long n_missing    = 0;
+    
 
     std::string line;
     while (std::getline(f, line)) {
@@ -61,19 +78,48 @@ int main(int argc, char* argv[])
 
         ++n_total;
 
-        const bool a_ok = fs::exists(audio_base / pathA);
-        const bool b_ok = fs::exists(audio_base / pathB);
+        const bool a_ok = fs::exists(resolve(audio_base, pathA));
+        const bool b_ok = fs::exists(resolve(audio_base, pathB));
 
-        if (a_ok && b_ok)
+        if (a_ok && b_ok) {
             ++n_resolvable;
-        else
+        } else {
             ++n_missing;
+
+            if (!a_ok &&
+                missing_examples.size() < 10 &&
+                seen_missing.insert(pathA).second)
+            {
+                missing_examples.push_back(pathA);
+            }
+
+            if (!b_ok &&
+                missing_examples.size() < 10 &&
+                seen_missing.insert(pathB).second)
+            {
+                missing_examples.push_back(pathB);
+            }
+        }
     }
 
-    std::cout
-        << "Trials in file:     " << n_total      << "\n"
-        << "Resolvable trials:  " << n_resolvable  << "\n"
-        << "Missing file pairs: " << n_missing     << "\n";
+    double pct =
+        n_total ?
+        100.0 * static_cast<double>(n_resolvable) / n_total :
+        0.0;
 
-    return (n_resolvable > 0) ? 0 : 1;
+    std::cout
+        << "Trials in file:     " << n_total << '\n'
+        << "Resolvable trials:  " << n_resolvable << '\n'
+        << "Missing file pairs: " << n_missing << '\n'
+        << "Coverage:           "
+        << std::fixed << std::setprecision(2)
+        << pct << "%\n";
+
+    if (!missing_examples.empty()) {
+        std::cout << "\nFirst missing paths:\n";
+        for (const auto& p : missing_examples)
+            std::cout << "  " << p << '\n';
+    }
+
+    return (n_missing == 0) ? 0 : 1;
 }

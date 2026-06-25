@@ -83,7 +83,7 @@ g++ -std=c++20 -O2 tools/check_trials.cpp -o tools/check_trials
 
 ./tools/check_trials \
     testdata/voxceleb_trials/trials.txt \
-    testdata/voxceleb_trials/audio
+    ~/Datasets/voxceleb1
 ```
 
 Expected output:

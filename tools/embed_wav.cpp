@@ -6,16 +6,26 @@
 // Used by compare_embeddings.py to get the C++ reference embedding.
 //
 // Build (from repo root):
-//   g++ -std=c++20 -O2 -Iinclude -I. -DDIARIZE_HAVE_MODEL \
-//       -I<ORT>/include \
-//       tools/embed_wav.cpp \
-//       src/DiarizationEngine.cpp src/SpeakerClusterManager.cpp \
-//       src/LabelSmoother.cpp src/TranscriptFormatter.cpp \
-//       models/WeSpeakerEcapaModel.cpp models/EcapaOnnxModel.cpp \
-//       models/SpeechBrainEcapaModel.cpp models/SpeakerModelFactory.cpp \
-//       models/SpeakerVerifier.cpp \
-//       -L<ORT>/lib -Wl,-rpath,<ORT>/lib -lonnxruntime \
-//       -o tools/embed_wav
+/* 
+
+g++ -std=c++20 -O2 -Iinclude -I. -DDIARIZE_HAVE_MODEL \
+    -I$ORT/include \
+    tools/embed_wav.cpp \
+    src/DiarizationEngine.cpp \
+    src/SpeakerClusterManager.cpp \
+    src/LabelSmoother.cpp \
+    src/TranscriptFormatter.cpp \
+    models/WeSpeakerEcapaModel.cpp \
+    models/EcapaOnnxModel.cpp \
+    models/SpeechBrainEcapaModel.cpp \
+    models/SpeakerModelFactory.cpp \
+    models/SpeakerVerifier.cpp \
+    -L$ORT/lib \
+    -Wl,-rpath,$ORT/lib \
+    -lonnxruntime \
+    -o tools/embed_wav
+
+ */
 //
 // Usage:
 //   ./tools/embed_wav <model.onnx> <audio.wav>
